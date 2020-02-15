@@ -1,0 +1,17 @@
+# Created by https://www.gitignore.io/api/dotnetcore
+# Edit at https://www.gitignore.io/?templates=dotnetcore
+
+### DotnetCore ###
+# .NET Core build folders
+/.vs
+/src/bin
+/src/obj
+
+# Common node modules locations
+/src/node_modules
+/src/wwwroot/node_modules
+
+# others
+/deploy.txt
+
+# End of https://www.gitignore.io/api/dotnetcore

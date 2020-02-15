@@ -1,0 +1,58 @@
+﻿@inject NavigationManager UriHelper
+<div id="nav"
+	class="col-xs-3 bg-dark text-white py-5 k-vbox @( !collapseNavMenu ? "expand" : "" )">
+	<span id="nav-toggle" class="nav-toggle d-md-none" @onclick="ToggleNavMenu">
+		<span class="k-icon k-i-hamburger"></span>
+	</span>
+	<h1 id="app-title"><img src="assets/logo.svg"></h1>
+	<p id="app-subtitle">Csandra</p>
+	<hr />
+	<p class="h4 mt-5">Comics</p>
+	<ul class="nav nav-pills flex-column">
+		<li class="nav-item" id="dashbaord">
+<NavLink class="@(IsAtRoot() ? "nav-link active" : "nav-link")" href="">That's me</NavLink>
+		</li>
+	</ul>
+	<p class="h4 mt-5">Account</p>
+	<ul class="nav nav-pills flex-column">
+		<li class="nav-item" id="profile">
+<NavLink class="nav-link" href="profile">My Profile</NavLink>
+		</li>
+		<li class="nav-item" id="signin">
+<NavLink class="nav-link" href="signin">Sign Out</NavLink>
+		</li>
+	</ul>
+	
+</div>
+
+@code {
+    bool collapseNavMenu = true;
+
+    string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    bool IsAtRoot()
+	{
+		string currUrl = UriHelper.Uri;
+		if (currUrl.EndsWith("/") || currUrl.EndsWith("/dashboard"))
+		{
+return true;
+		}
+		return false;
+	}
+
+	protected override void OnInitialized()
+	{
+		UriHelper.LocationChanged += OnLocationChanges;
+	}
+
+	private void OnLocationChanges(object sender, LocationChangedEventArgs args)
+	{
+		collapseNavMenu = false;
+		StateHasChanged();
+	}
+}

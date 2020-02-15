@@ -1,0 +1,15 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Http
+@using Radzen.Blazor
+@inject NavigationManager UriHelper
+
+<RadzenDialog />
+<div class="row">
+	<div id="top-bar" class="top-bar col-xs-12 bg-dark d-md-none"></div>
+    <NavMenu />
+
+
+    <main class="col-xs p-4 py-5">
+        @Body
+    </main>
+</div>

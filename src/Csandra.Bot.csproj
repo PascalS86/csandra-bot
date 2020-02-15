@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <VersionPrefix>$([System.DateTime]::UtcNow.ToString("yyyy.MM.dd"))</VersionPrefix>
+  </PropertyGroup>
+
+  <ItemGroup>
+
+    <PackageReference Include="AdaptiveCards" Version="1.2.0" />
+    <PackageReference Include="newtonsoft.json" Version="12.0.2" />
+    <PackageReference Include="Radzen.Blazor" Version="2.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.2" />
+    <PackageReference Include="Microsoft.Azure.CognitiveServices.ContentModerator" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Azure.CognitiveServices.Language" Version="1.0.1-preview" />
+    <PackageReference Include="Microsoft.Bot.Builder" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Builder.AI.Luis" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Builder.AI.QnA" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Builder.ApplicationInsights" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Builder.Azure" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Builder.Dialogs" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Builder.Integration.ApplicationInsights.Core" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Builder.Skills" Version="4.5.4" />
+    <PackageReference Include="Microsoft.Bot.Builder.Solutions" Version="4.5.4" />
+    <PackageReference Include="Microsoft.Bot.Builder.StreamingExtensions" Version="4.5.1-preview1" />
+    <PackageReference Include="Microsoft.Bot.Builder.TemplateManager" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Configuration" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Connector" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Bot.Schema" Version="4.5.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="3.1.0" />
+    
+  </ItemGroup>
+
+</Project>
