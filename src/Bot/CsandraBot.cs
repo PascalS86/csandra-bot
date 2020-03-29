@@ -431,7 +431,7 @@ namespace Csandra.Bot
         {
             // Step 1: Call the Bing Image Search API
             //IMPORTANT: replace this variable with your Cognitive Services subscription key.
-            string subscriptionKey = "ebc0f941ef53461e8f244624b2d657df";
+            string subscriptionKey = "@@BingSubscription@@";
             //initialize the client
             var client = new WebSearchClient(new ApiKeyServiceClientCredentials(subscriptionKey));
             //images to be returned by the Bing Image Search API
@@ -576,12 +576,10 @@ namespace Csandra.Bot
                     }
                 };
                 //TODO: Change API Access
-                const string apiKey = "2UAGlNfRR7kE/jC/4JbkX6rLVKklFIvF5Ny36qfqU71UuGRTVnGUFkXjWHxHfcWKEVtQFLUCiPrwX13t93i5jA=="; // Replace this with the API key for the web service
+                const string apiKey = "@@@AZUREMLAPIKEY@@@"; // Replace this with the API key for the web service
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue( "Bearer", apiKey);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                client.BaseAddress = new Uri("https://ussouthcentral.services.azureml.net/workspaces/4e95229a43ce48639c0442e60d748fcd/services/40847a685c9e428cb810ed7954a986d3/execute?api-version=2.0&details=true");
-
-                
+                client.BaseAddress = new Uri("@@@AZUREMLURL@@@");  
                 // WARNING: The 'await' statement below can result in a deadlock if you are calling this code from the UI thread of an ASP.Net application.
                 // One way to address this would be to call ConfigureAwait(false) so that the execution does not attempt to resume on the original context.
                 // For instance, replace code such as:
