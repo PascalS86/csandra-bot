@@ -1,22 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
-using Microsoft.Bot.Connector.Authentication;
 using Microsoft.Bot.Builder;
-using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Extensions.Logging;
-using Radzen;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace Csandra.Bot
 {
@@ -33,13 +24,7 @@ namespace Csandra.Bot
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<KestrelServerOptions>(options =>
-            {
-                options.AllowSynchronousIO = true;
-            });
-            services.AddRazorPages();
-            services.AddServerSideBlazor();
-            services.AddScoped<DialogService>();
+            services.AddMvc(mvcOptions => mvcOptions.EnableEndpointRouting = false);
             services.AddMvc().SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0);
             
             // Create the Bot Framework Adapter with error handling enabled.
@@ -74,17 +59,13 @@ namespace Csandra.Bot
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+
+
+            app.UseDefaultFiles();
             app.UseStaticFiles();
-
-            app.UseRouting();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
-                endpoints.MapBlazorHub();
-                endpoints.MapFallbackToPage("/_Host");
-            });
+            app.UseWebSockets();
+            //app.UseHttpsRedirection();
+            app.UseMvc();
         }
     }
 

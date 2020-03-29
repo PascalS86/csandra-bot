@@ -8,6 +8,8 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Schema;
 using Microsoft.Bot.Builder.AI.Luis;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Azure.CognitiveServices.Search.WebSearch;
+using Microsoft.Azure.CognitiveServices.Search.WebSearch.Models;
 using System.Linq;
 using System;
 using System.Net.Http;
@@ -47,12 +49,7 @@ namespace Csandra.Bot
             var userProfile = await userStateAccessors.GetAsync(turnContext, () => new UserProfile());
 
             var intent = await Csandra.Bot.Services.Luis.Instance.GetIntent(turnContext.Activity.Text);
-            var response = HandleIntent(intent, conversationData.Intent, ref conversationData);
-            conversationData.UserAnswers.Add(DateTime.Now, turnContext.Activity.Text);
-            conversationData.BotAnswers.Add(DateTime.Now, response.Item1);
-            await turnContext.SendActivityAsync(MessageFactory.Text(response.Item1), cancellationToken);
-            
-            conversationData.Intent = response.Item2;
+            await HandleIntent(turnContext, intent, conversationData, cancellationToken);
         }
 
         protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
@@ -66,7 +63,11 @@ namespace Csandra.Bot
             }
         }
 
-        private (string,string) HandleIntent(string result, string intent, ref ConversationData conversationData){
+        private async Task HandleIntent(ITurnContext<IMessageActivity> context, string result, ConversationData conversationData, CancellationToken cancellationToken){
+            
+            string intent = conversationData.Intent;
+            conversationData.UserAnswers.Add(DateTime.Now, context.Activity.Text);
+            
             JObject obj = JObject.Parse(result);
             var newIntent = (string)obj["topScoringIntent"]["intent"];
             string query = (string)obj["query"];
@@ -91,6 +92,9 @@ namespace Csandra.Bot
                     // return (prediction, newIntent);
                 }
             }
+            else if(newIntent == "Csandra.FollowUp"){
+                conversationData.Intent = intent;
+            }
             else if(newIntent != "Csandra.GetGame"){
                     // var prediction = InvokeRequestResponseService(conversationData.Players, conversationData.GameMode,conversationData.GameDuration).GetAwaiter().GetResult();
                     conversationData.GameMode = "";
@@ -103,49 +107,73 @@ namespace Csandra.Bot
                     conversationData.Game = "";
                     // return (prediction, newIntent);
             }
-
+            string answer = "";
             switch (newIntent){
                 case "Csandra.About":
-                    return (HandleAbout(query), newIntent);
+                    answer =  (HandleAbout(query));
+                    break;
                 case "Csandra.Bye":
-                    return (HandleBye(), newIntent);
+                    answer =  (HandleBye());
+                    break;
                 case "Csandra.Cancel":
-                    return (HandleCancel(), newIntent);
+                    answer =  (HandleCancel());
+                    break;
                 case "Csandra.Confirm":
-                    return (HandleConfirm(), newIntent);
+                    answer =  (HandleConfirm());
+                    break;
                 case "Csandra.Cool":
-                    return (HandleCool(), newIntent);
+                    answer =  (HandleCool());
+                    break;
                 case "Csandra.Feedback":
-                    return (HandleFeedback(obj), newIntent);
+                    answer =  (HandleFeedback(obj));
+                    break;
                 case "Csandra.GameInfo":
-                    return (HandleGameInfo(obj, ref conversationData), newIntent);
+                    answer =  (HandleGameInfo(obj, context, ref conversationData));
+                    break;
                 case "Csandra.GameOpinon":
-                    return (HandleGameOpinon(), newIntent);
+                    answer =  (HandleGameOpinon());
+                    break;
                 case "Csandra.GetGame":
-                    return (HandleGetGame(obj, ref conversationData), newIntent);
+                    answer =  (HandleGetGame(obj, ref conversationData));
+                    break;
                 case "Csandra.Greeting":
-                    return (HandleGreeting(), newIntent);
+                    answer =  (HandleGreeting());
+                    break;
                 case "Csandra.HowAreYou":
-                    return (HandleHowAreYou(query), newIntent);
+                    answer =  (HandleHowAreYou(query));
+                    break;
                 case "Csandra.HowOld":
-                    return (HandleHowOld(), newIntent);
+                    answer =  (HandleHowOld());
+                    break;
                 case "Csandra.Intressts":
-                    return (HandleIntressts(), newIntent);
+                    answer =  (HandleIntressts());
+                    break;
                 case "Csandra.MySocial":
-                    return (HandleMySocial(query), newIntent);
+                    answer =  (HandleMySocial(query));
+                    break;
                 case "Csandra.Thanks":
-                    return (HandleThanks(), newIntent);
+                    answer =  (HandleThanks());
+                    break;
                 case "Csandra.WhatAreYouDoing":
-                    return (HandleWhatAreYouDoing(), newIntent);
+                    answer =  (HandleWhatAreYouDoing());
+                    break;
                 case "Csandra.Where":
-                    return (HandleWhere(), newIntent);
+                    answer =  (HandleWhere());
+                    break;
                 case "Csandra.WhoAreYou":
-                    return (HandleWhoAreYou(), newIntent);
-                case "None":
-                    return (HandleNone(), newIntent);
+                    answer =  (HandleWhoAreYou());
+                    break;
+                case "Csandra.FollowUp":
+                    answer =  (HandleFollowUp(conversationData.Intent));
+                    break;
                 default:
-                    return (HandleNone(), newIntent); 
+                    answer =  (HandleNone());
+                    break; 
             }
+            
+            await context.SendActivityAsync(MessageFactory.Text(answer), cancellationToken);
+            conversationData.BotAnswers.Add(DateTime.Now, answer);
+            conversationData.Intent = newIntent;
         }
 
         private string GetRandomString(List<string> lst){
@@ -154,27 +182,42 @@ namespace Csandra.Bot
                  return lst[index];
         }
         
+        private string HandleFollowUp(string intent){
+            switch(intent){
+                default:
+                    return HandleNone();
+            }
+        }
+
         private string HandleAbout(string query){
             if(query.ToLower().Contains("über")){
                 var list = new List<string>(){
-                    "Ich bin Csandra. Jung. Dynamisch. Erfolglos."+
+                    "Ich bin Cassi. Jung. Dynamisch. Deine Assistentin."+
                     "\r\nAm besten kann ich dir bei Boardgames helfen",
-                    "Ich heiße Csandra."+
+                    "Ich heiße Cassi."+
                     "\r\nFrag mich was zu deinen Spielen. Ich versuche dir zu helfen",
-                    "Ich bin Csandra, die lernende Assistentin."+
+                    "Ich bin Cassi, die lernende Assistentin."+
                     "\r\nFrag mich was zu deinen Spielen. Vielleicht kann ich dir helfen",
-                    "Ich heiße Csandra und will dir helfen."+
+                    "Ich heiße Cassi und will dir helfen."+
                     "\r\nAm besten kann ich dir bei Boardgames helfen",
                     
                 };
                 return GetRandomString(list);
             }
             else{
+                var activityList = new List<string>(){
+                    "\r\nSag z.B. Cassi, ich will ein Spiel spielen",
+                    "\r\nSag z.B. Cassi, zeige mir meine Spiele",
+                };
                 var list = new List<string>(){
-                    "Ich kann dir bei deinen Boardgames helfen.",
-                    "Deine Boardgames sind mein Metier",
-                    "Boardgames. Das ist mein Ding.",
-                    "Am besten kann ich dir bei deinen Boardgames helfen",
+                    "Ich kann dir bei deinen Boardgames helfen."+
+                    GetRandomString(activityList),
+                    "Deine Boardgames sind mein Metier"+
+                    GetRandomString(activityList),
+                    "Boardgames. Das ist mein Ding."+
+                    GetRandomString(activityList),
+                    "Am besten kann ich dir bei deinen Boardgames helfen"+
+                    GetRandomString(activityList),
                 };
                 return GetRandomString(list);
             }
@@ -283,7 +326,7 @@ namespace Csandra.Bot
                 "Ich schaue mir die Boardgames an",
                 "Gerade? Die Boardgames bearbeiten",
                 "Games bewerten, Zusammenfassungen lesen und dir sagen, was ich gerade tue",
-                "Nicht viel. Eigentlich bis gerade nix"
+                "Nicht viel. Was kann ich für dich tun?"
             });
         }
         private string HandleWhere(){//TODO: Handle additional content
@@ -296,10 +339,10 @@ namespace Csandra.Bot
         }
         private string HandleWhoAreYou(){//TODO: Handle additional content
             return GetRandomString(new List<string>(){
-                "Ich bin Csandra",
-                "Ich heiße Csandra",
-                "Csandra",
-                "Mein Name ist Csandra."
+                "Ich bin Cassi",
+                "Ich heiße Cassi",
+                "Cassi",
+                "Mein Name ist Cassi."
             });
         }
         private string HandleNone(){//TODO: Handle additional content
@@ -374,9 +417,86 @@ namespace Csandra.Bot
                     return prediction;
         }
 
-        private string HandleGameInfo(JObject json, ref ConversationData conversationData){//TODO: Handle additional content
-            return HandleNone(); //TOOD: Bind BingSearch
+        private string HandleGameInfo(JObject json, ITurnContext context,ref ConversationData conversationData){//TODO: Handle additional content
+            var entities = (JArray)json["entities"];
+            foreach(var item in entities){
+                string entity = (string)item["entity"];
+                SearchBing(context, entity);
+            }
+            return "Das habe ich gefunden"; //TOOD: Bind BingSearch
         }
+
+ // Add SearchBing
+        public async void SearchBing(ITurnContext context, string searchText)
+        {
+            // Step 1: Call the Bing Image Search API
+            //IMPORTANT: replace this variable with your Cognitive Services subscription key.
+            string subscriptionKey = "ebc0f941ef53461e8f244624b2d657df";
+            //initialize the client
+            var client = new WebSearchClient(new ApiKeyServiceClientCredentials(subscriptionKey));
+            //images to be returned by the Bing Image Search API
+            SearchResponse result = null;
+            try
+            {
+                // Call the API and store the results
+                result = client.Web.SearchAsync(query: searchText).Result; //search query
+            }
+            catch (Exception ex)
+            {
+                // If there's an exception, return the error in the chat window
+                await context.SendActivityAsync("Encountered exception. " + ex.Message);
+            }
+            // Step 2: Process the results and send to the user
+            // If the API returns smt
+            if (result != null)
+            {
+                // Send the activity to the user.
+                int i = 0;
+                List<Attachment> lst = new List<Attachment>();
+                foreach(var item in result.WebPages.Value){
+                   
+                    AdaptiveCards.AdaptiveCard card = new AdaptiveCards.AdaptiveCard();
+                    card.Body.Add(new AdaptiveCards.AdaptiveTextBlock (){
+                         Text = item.Name,
+                         Size = AdaptiveCards.AdaptiveTextSize.Medium,
+                         Weight = AdaptiveCards.AdaptiveTextWeight.Bolder
+                    });
+                    card.Body.Add(new AdaptiveCards.AdaptiveTextBlock (){
+                         Text = item.DisplayUrl,
+                         Wrap =true,
+                         Weight = AdaptiveCards.AdaptiveTextWeight.Lighter
+                    });
+                    card.Body.Add(new AdaptiveCards.AdaptiveTextBlock (){
+                         Text = item.Snippet,
+                         Wrap =true,
+                         Size = AdaptiveCards.AdaptiveTextSize.Medium
+                    });
+                    card.Actions.Add(new AdaptiveCards.AdaptiveOpenUrlAction(){
+                        Title = item.Url,
+                        Url = new Uri(item.Url)
+                    });
+                    Attachment attachment = new Attachment()
+                    {
+                        ContentType = AdaptiveCards.AdaptiveCard.ContentType,
+                        Content = card
+                    };
+                    lst.Add(attachment);
+                    if(i == 5)
+                        break;
+                    i++;
+
+                }
+                
+                await context.SendActivityAsync(MessageFactory.Carousel(lst));
+            }
+            else // If the API doesn't return anything
+            {
+                string none = HandleNone();
+                await context.SendActivityAsync(MessageFactory.Text(none));
+            }
+        }
+
+
         private string HandleFeedback(JObject json){
             var entities = (JArray)json["entities"];
             string feedback = "";
@@ -456,10 +576,11 @@ namespace Csandra.Bot
                     }
                 };
                 //TODO: Change API Access
-                const string apiKey = "@@@AZUREMLAPIKEY@@@"; // Replace this with the API key for the web service
+                const string apiKey = "2UAGlNfRR7kE/jC/4JbkX6rLVKklFIvF5Ny36qfqU71UuGRTVnGUFkXjWHxHfcWKEVtQFLUCiPrwX13t93i5jA=="; // Replace this with the API key for the web service
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue( "Bearer", apiKey);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                client.BaseAddress = new Uri("@@@AZUREMLURL@@@");
+                client.BaseAddress = new Uri("https://ussouthcentral.services.azureml.net/workspaces/4e95229a43ce48639c0442e60d748fcd/services/40847a685c9e428cb810ed7954a986d3/execute?api-version=2.0&details=true");
+
                 
                 // WARNING: The 'await' statement below can result in a deadlock if you are calling this code from the UI thread of an ASP.Net application.
                 // One way to address this would be to call ConfigureAwait(false) so that the execution does not attempt to resume on the original context.
@@ -521,4 +642,6 @@ namespace Csandra.Bot
         }
     
     }
+
+    
 }
