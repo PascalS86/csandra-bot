@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, height=device-height">
     <script crossorigin="anonymous"
             src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
     <style>
@@ -25,7 +26,7 @@
         window.WebChat.renderWebChat(
             {
                 directLine: window.WebChat.createDirectLine({
-                    token: @@DIRECTLINETOKEN@@
+                    token: '@@DIRECTLINETOKEN@@'
                 }),
                 locale: 'de-DE',
                 botAvatarInitials: 'CA'

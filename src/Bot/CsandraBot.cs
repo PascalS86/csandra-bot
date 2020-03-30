@@ -80,7 +80,7 @@ namespace Csandra.Bot
                     newIntent = conversationData.Intent;
                 }
                 else if(conversationData.Intent == "Csandra.GameInfo"
-                && conversationData.Game == ""){
+                && conversationData.LastIndex == -1){
                     newIntent = conversationData.Intent;
                 }
                 else{
@@ -88,25 +88,22 @@ namespace Csandra.Bot
                     conversationData.GameMode = "";
                     conversationData.Players = "";
                     conversationData.GameDuration = "";
-                    conversationData.Game = "";
+                    conversationData.LastIndex = -1;
+                    conversationData.Games.Clear();
                     // return (prediction, newIntent);
                 }
             }
             else if(newIntent == "Csandra.FollowUp"){
                 conversationData.Intent = intent;
             }
-            else if(newIntent != "Csandra.GetGame"){
-                    // var prediction = InvokeRequestResponseService(conversationData.Players, conversationData.GameMode,conversationData.GameDuration).GetAwaiter().GetResult();
-                    conversationData.GameMode = "";
-                    conversationData.Players = "";
-                    conversationData.GameDuration = "";
-                    // return (prediction, newIntent);
-            }
-            else if(newIntent != "Csandra.GameInfo"){
-                    // var prediction = InvokeRequestResponseService(conversationData.Players, conversationData.GameMode,conversationData.GameDuration).GetAwaiter().GetResult();
-                    conversationData.Game = "";
-                    // return (prediction, newIntent);
-            }
+            // else if(newIntent != "Csandra.GetGame")
+            // {
+            //         conversationData.GameMode = "";
+            //         conversationData.Players = "";
+            //         conversationData.GameDuration = "";
+            //         conversationData.Games.Clear();
+            // }
+
             string answer = "";
             switch (newIntent){
                 case "Csandra.About":
@@ -121,6 +118,18 @@ namespace Csandra.Bot
                 case "Csandra.Confirm":
                     answer =  (HandleConfirm());
                     break;
+                case "Csandra.Decline":
+                    answer =  (HandleDecline());
+                    if(conversationData.Intent == "Csandra.GetGame"){
+                        newIntent = conversationData.Intent; 
+                        await context.SendActivityAsync(MessageFactory.Text(answer), cancellationToken);
+                        conversationData.BotAnswers.Add(DateTime.Now, answer);
+                        answer = "";
+                        string response = HandleGetGame(context, obj, ref conversationData);
+                        await context.SendActivityAsync(MessageFactory.Text(response), cancellationToken);
+                        conversationData.BotAnswers.Add(DateTime.Now, response);
+                    }
+                    break;
                 case "Csandra.Cool":
                     answer =  (HandleCool());
                     break;
@@ -134,7 +143,7 @@ namespace Csandra.Bot
                     answer =  (HandleGameOpinon());
                     break;
                 case "Csandra.GetGame":
-                    answer =  (HandleGetGame(obj, ref conversationData));
+                    answer =  (HandleGetGame(context, obj, ref conversationData));
                     break;
                 case "Csandra.Greeting":
                     answer =  (HandleGreeting());
@@ -170,9 +179,10 @@ namespace Csandra.Bot
                     answer =  (HandleNone());
                     break; 
             }
-            
-            await context.SendActivityAsync(MessageFactory.Text(answer), cancellationToken);
-            conversationData.BotAnswers.Add(DateTime.Now, answer);
+            if(!string.IsNullOrWhiteSpace(answer)){
+                await context.SendActivityAsync(MessageFactory.Text(answer), cancellationToken);
+                conversationData.BotAnswers.Add(DateTime.Now, answer);
+            }
             conversationData.Intent = newIntent;
         }
 
@@ -207,7 +217,7 @@ namespace Csandra.Bot
             else{
                 var activityList = new List<string>(){
                     "\r\nSag z.B. Cassi, ich will ein Spiel spielen",
-                    "\r\nSag z.B. Cassi, zeige mir meine Spiele",
+                    "\r\nSag z.B. Cassi, erzähle mir was über Marvel Legendary",
                 };
                 var list = new List<string>(){
                     "Ich kann dir bei deinen Boardgames helfen."+
@@ -245,6 +255,14 @@ namespace Csandra.Bot
                 "Gerne",
                 "Super",
                 "Toll"
+            });
+        }
+        private string HandleDecline(){
+            return GetRandomString(new List<string>(){
+                "Ok",
+                "Dann nicht",
+                "Na gut",
+                "Na denn"
             });
         }
         private string HandleCool(){
@@ -357,80 +375,111 @@ namespace Csandra.Bot
             });
         }
 
-        private string HandleGetGame(JObject json, ref ConversationData conversationData){//TODO: Handle additional content
-            var entities = (JArray)json["entities"];
-            foreach(var item in entities){
-                string type  = (string)item["type"];
-                switch(type){
-                    case "Csandra.GameMode":
-                        conversationData.GameMode = (string)item["entity"];
-                        break;
-                    case "builtin.number":
-                        var role = (string)item["role"];
-                        if(role == "csandra.players" || role == "" || role == null)
-                            conversationData.Players = (string)item["entity"];
-                        
-                        Console.WriteLine(item);
-                        break;
-                    case "Csandra.GameDuration":
-                        conversationData.GameDuration =  (string)item["entity"];
-                        break;
-                    default:
-                        break;
+        private string HandleGetGame(ITurnContext context, JObject json, ref ConversationData conversationData){//TODO: Handle additional content
+            if(!conversationData.Games.Any()){
+                var entities = (JArray)json["entities"];
+                foreach(var item in entities){
+                    string type  = (string)item["type"];
+                    switch(type){
+                        case "Csandra.GameMode":
+                            conversationData.GameMode = (string)item["entity"];
+                            break;
+                        case "builtin.number":
+                            var role = (string)item["role"];
+                            if(role == "csandra.players" || role == "" || role == null){
+                                conversationData.Players = (string)item["entity"];
+                                if(conversationData.Players.ToLower() == "ein" || conversationData.Players.ToLower() == "eine"
+                                || conversationData.Players.ToLower() == "einer")
+                                conversationData.Players = "";
+                            }
+                            
+                            Console.WriteLine(item);
+                            break;
+                        case "Csandra.GameDuration":
+                            conversationData.GameDuration =  (string)item["entity"];
+                            break;
+                        default:
+                            break;
+                    }
                 }
-            }
-            if(conversationData.GameMode == "")
-                return GetRandomString(new List<string>(){
-                    "Ok, welche Art von Spiel willst du spielen?"
-                    +"\r\nKoop? Semi-Koop? Versus?",
-                    "Alles klar. Was darfs sein?"
-                    +"\r\nKoop? Semi-Koop? Versus?",
-                    "Welche Art von Spiel willst du spielen?"
-                    +"\r\nKoop? Semi-Koop? Versus?",
-                    "Was für ein Spielmodi darfs sein?"
-                    +"\r\nKoop? Semi-Koop? Versus?"
-                });
-            else if(conversationData.Players == "")
-                return GetRandomString(new List<string>(){
-                    "Gut. Und wieviele Spieler spielen mit?",
-                    "Wieviele Spieler sind dabei?",
-                    "Super. Wieviele Spieler?",
-                    "Awesome. Und wieviele Spieler sind dabei?"
-                });
-            else if(conversationData.GameDuration == "")
-                return GetRandomString(new List<string>(){
-                    "Ok. Wie lange soll das Game dauern?"
-                    +"\r\nKurz? Mittel? Lang? Egal?",
-                    "Wie lange soll es gehen??"
-                    +"\r\nKurz? Mittel? Lang? Egal?",
-                    "Und wie lange soll das Spiel gehen?"
-                    +"\r\nKurz? Mittel? Lang? Egal?",
-                    "Wie lange darfs gehen?"
-                    +"\r\nKurz? Mittel? Lang? Egal?"
-                });
 
-            
-                    var prediction = InvokeRequestResponseService(conversationData.Players, conversationData.GameMode,conversationData.GameDuration).GetAwaiter().GetResult();
-                    conversationData.GameMode = "";
-                    conversationData.Players = "";
-                    conversationData.GameDuration = "";
-                    return prediction;
+                if(conversationData.GameMode == "")
+                    return GetRandomString(new List<string>(){
+                        "Ok, welche Art von Spiel willst du spielen?"
+                        +"\r\nKoop? Semi-Koop? Versus?",
+                        "Alles klar. Was darfs sein?"
+                        +"\r\nKoop? Semi-Koop? Versus?",
+                        "Welche Art von Spiel willst du spielen?"
+                        +"\r\nKoop? Semi-Koop? Versus?",
+                        "Was für ein Spielmodi darfs sein?"
+                        +"\r\nKoop? Semi-Koop? Versus?"
+                    });
+                else if(conversationData.Players == "")
+                    return GetRandomString(new List<string>(){
+                        "Gut. Und wieviele Spieler spielen mit?",
+                        "Wieviele Spieler sind dabei?",
+                        "Super. Wieviele Spieler?",
+                        "Awesome. Und wieviele Spieler sind dabei?"
+                    });
+                else if(conversationData.GameDuration == "")
+                    return GetRandomString(new List<string>(){
+                        "Ok. Wie lange soll das Game dauern?"
+                        +"\r\nKurz? Mittel? Lang? Egal?",
+                        "Wie lange soll es gehen??"
+                        +"\r\nKurz? Mittel? Lang? Egal?",
+                        "Und wie lange soll das Spiel gehen?"
+                        +"\r\nKurz? Mittel? Lang? Egal?",
+                        "Wie lange darfs gehen?"
+                        +"\r\nKurz? Mittel? Lang? Egal?"
+                    });
+            }
+
+            if(!conversationData.Games.Any()){
+                var prediction = InvokeRequestResponseService(conversationData.Players, conversationData.GameMode,conversationData.GameDuration).GetAwaiter().GetResult();
+                conversationData.GameMode = "";
+                conversationData.Players = "";
+                conversationData.GameDuration = "";
+
+                conversationData.Games = prediction;
+            }
+            if(conversationData.Games.Any() && conversationData.LastIndex <= conversationData.Games.Count){
+                conversationData.LastIndex++;
+                var key = conversationData.Games[conversationData.LastIndex].Replace("Scored Probabilities for Class", "").Replace("\"", "");
+                SearchBing(context, key, false);
+                return GetRandomString(new List<string>(){
+                        $"{(conversationData.LastIndex == 0?"Ok. Cool. ": "")}Wie wär's mit {key}?",
+                        $"Was hälst du von {key}?",
+                        $"Wäre {key} gut?",
+                        $"{(conversationData.LastIndex == 0?"Nice. ": "")}Wie wär's mit {key}?"
+                    }); 
+            }
+            else{ 
+                conversationData.LastIndex = -1;
+                conversationData.Games.Clear();
+                return GetRandomString(new List<string>(){
+                        "Sorry, aber mir fällt nix ein",
+                        "Hm, dafür fällt mir leider nix ein",
+                        "Ich weiß auch nicht so genau",
+                        "Es tut mir soooo leid, aber ich weiß es auch nicht."
+                    }); 
+                 
+            }
         }
 
         private string HandleGameInfo(JObject json, ITurnContext context,ref ConversationData conversationData){//TODO: Handle additional content
             var entities = (JArray)json["entities"];
             foreach(var item in entities){
                 string entity = (string)item["entity"];
-                SearchBing(context, entity);
+                SearchBing(context, entity, true);
             }
             return "Das habe ich gefunden"; //TOOD: Bind BingSearch
         }
 
- // Add SearchBing
-        public async void SearchBing(ITurnContext context, string searchText)
+        // Add SearchBing
+        public async void SearchBing(ITurnContext context, string searchText, bool isWebSearch)
         {
             // Step 1: Call the Bing Image Search API
-            //IMPORTANT: replace this variable with your Cognitive Services subscription key.
+            //IMPORTANT: replace this variable with your Cognitive Services subscription key.            
             string subscriptionKey = "@@BingSubscription@@";
             //initialize the client
             var client = new WebSearchClient(new ApiKeyServiceClientCredentials(subscriptionKey));
@@ -450,6 +499,20 @@ namespace Csandra.Bot
             // If the API returns smt
             if (result != null)
             {
+                if(isWebSearch)
+                    DisplaySearchResult(result, context);
+                else
+                    DisplayImage(result, context);
+            }
+            else // If the API doesn't return anything
+            {
+                string none = HandleNone();
+                await context.SendActivityAsync(MessageFactory.Text(none));
+            }
+        }
+
+        private async void DisplaySearchResult(SearchResponse result, ITurnContext context){
+            
                 // Send the activity to the user.
                 int i = 0;
                 List<Attachment> lst = new List<Attachment>();
@@ -488,15 +551,27 @@ namespace Csandra.Bot
                 }
                 
                 await context.SendActivityAsync(MessageFactory.Carousel(lst));
-            }
-            else // If the API doesn't return anything
-            {
-                string none = HandleNone();
-                await context.SendActivityAsync(MessageFactory.Text(none));
-            }
+        } 
+
+        private async void DisplayImage(SearchResponse result, ITurnContext context){
+            if(result.Images == null || result.Images.Value == null)
+                return;
+                // Send the activity to the user.
+                List<Attachment> lst = new List<Attachment>();
+                var item = result.Images.Value[0];
+                   
+                    AdaptiveCards.AdaptiveCard card = new AdaptiveCards.AdaptiveCard();
+                    card.Body.Add(new AdaptiveCards.AdaptiveImage(item.ContentUrl));
+                    
+                    Attachment attachment = new Attachment()
+                    {
+                        ContentType = AdaptiveCards.AdaptiveCard.ContentType,
+                        Content = card
+                    };
+                    lst.Add(attachment);
+                
+                await context.SendActivityAsync(MessageFactory.Carousel(lst));
         }
-
-
         private string HandleFeedback(JObject json){
             var entities = (JArray)json["entities"];
             string feedback = "";
@@ -553,7 +628,7 @@ namespace Csandra.Bot
                 "Schön, dass dich meine Meinung interessiert. Mir gefallen alle"
             });
         }
-        async Task<string> InvokeRequestResponseService(string players, string mechanic, string duration = "")
+        async Task<List<string>> InvokeRequestResponseService(string players, string mechanic, string duration = "")
         {
             if(duration == "egal")
                 duration = "";
@@ -579,7 +654,7 @@ namespace Csandra.Bot
                 const string apiKey = "@@@AZUREMLAPIKEY@@@"; // Replace this with the API key for the web service
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue( "Bearer", apiKey);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                client.BaseAddress = new Uri("@@@AZUREMLURL@@@");  
+                client.BaseAddress = new Uri("@@@AZUREMLURL@@@"); 
                 // WARNING: The 'await' statement below can result in a deadlock if you are calling this code from the UI thread of an ASP.Net application.
                 // One way to address this would be to call ConfigureAwait(false) so that the execution does not attempt to resume on the original context.
                 // For instance, replace code such as:
@@ -608,17 +683,7 @@ namespace Csandra.Bot
 
                     Random r = new Random();
 
-                    int index = r.Next(0, indexes.Count() - 1);
-                    var key = columnNames.Where(c=> c.index == indexes.ElementAt(index)).First().name;
-
-                    key = key.Replace("Scored Probabilities for Class ", "").Replace("\"", "");
-
-                    return GetRandomString(new List<string>(){
-                        $"Ok. Cool. Wie wär's mit {key}?",
-                        $"Was hälst du von {key}?",
-                        $"Wäre {key} gut?",
-                        $"Nice. Wie wär's mit {key}?"
-                    }); 
+                    return columnNames.Select(c=> c.name).OrderBy(x => Guid.NewGuid()).ToList();
                 }
                 else
                 {
@@ -629,12 +694,7 @@ namespace Csandra.Bot
 
                     string responseContent = await response.Content.ReadAsStringAsync();
                     Console.WriteLine(responseContent);
-                    return GetRandomString(new List<string>(){
-                        "Sorry, aber mir fällt nix ein",
-                        "Hm, dafür fällt mir leider nix ein",
-                        "Ich weiß auch nicht so genau",
-                        "Es tut mir soooo leid, aber ich weiß es auch nicht."
-                    }); 
+                    return new List<string>();
                 }
             }
         }

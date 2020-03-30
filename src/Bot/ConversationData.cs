@@ -21,7 +21,8 @@ namespace Csandra.Bot
         public string GameMode{get;set;} = "";
         public string Players{get;set;} = "";
         public string GameDuration{get;set;} = "";
-        public string Game {get;set;} = "";
+        public int LastIndex {get;set;} = -1;
+        public List<string> Games{get;set;}= new List<string>();
     }
 
     // Defines a state property used to track information about the user.
