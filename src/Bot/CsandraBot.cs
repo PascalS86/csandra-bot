@@ -212,7 +212,13 @@ namespace Csandra.Bot
                     "\r\nAm besten kann ich dir bei Boardgames helfen",
                     
                 };
-                return GetRandomString(list);
+                //TODO: Add Speech output
+                string replyText = GetRandomString(list);
+                var replySpeak = @"<speak version='1.0' xmlns='https://www.w3.org/2001/10/synthesis' xml:lang='de-DE'>
+                <voice name='Microsoft Server Speech Text to Speech Voice (de-DE, Stefan, Apollo)'>" +
+                $"{replyText}" + "</voice></speak>";
+                //TODO: Add Languages
+                return replyText;
             }
             else{
                 var activityList = new List<string>(){
