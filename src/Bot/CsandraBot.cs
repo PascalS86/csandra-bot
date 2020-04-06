@@ -213,6 +213,7 @@ namespace Csandra.Bot
                     
                 };
                 //TODO: Add Speech output https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/tutorial-voice-enable-your-bot-speech-sdk
+                //TODO: Add Translation to the said texts
                 string replyText = GetRandomString(list);
                 var replySpeak = @"<speak version='1.0' xmlns='https://www.w3.org/2001/10/synthesis' xml:lang='de-DE'>
                 <voice name='Microsoft Server Speech Text to Speech Voice (de-DE, Stefan, Apollo)'>" +
